@@ -77,7 +77,7 @@ sub shadow_attrs {
 
     }
 
-    if ( $args->{instance} ) {
+    if ( defined $args->{instance} ) {
 
 	$MAP{$from}{$to}{instance}{$args->{instance}} = \%map;
 
