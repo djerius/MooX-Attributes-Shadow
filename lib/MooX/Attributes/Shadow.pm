@@ -44,6 +44,7 @@ sub shadow_attrs {
 		       fmt => { allow => sub { ref $_[0]  eq 'CODE' } },
 		       attrs => { allow => sub { ref $_[0] eq 'ARRAY' && @{$_[0]}},
 				},
+		       private => { default => 1 },
 		       instance => { },
 		       },
 		      { @_ } )
@@ -63,13 +64,14 @@ sub shadow_attrs {
     for my $attr ( @{ $args->{attrs} } ) {
 
 	my $alias = $args->{fmt} ? $args->{fmt}->( $attr ) : $attr;
-	my $priv = "_shadow_$attr";
+	my $priv = $args->{private} ? "_shadow_${from}_${attr}" : $alias;
+	$priv =~ s/::/_/g;
 	$map{$attr} = { priv => $priv, alias => $alias };
 
 	no strict 'refs';
 	$has->( $priv => ( is => 'ro',
  				    init_arg => $alias,
-				    predicate => 1,
+				    predicate => "_has_${priv}",
 				  )
 	      );
 
@@ -105,7 +107,7 @@ sub xtract_attrs {
     while( my ($attr, $names) = each %$map ) {
 
 	my $priv = $names->{priv};
-	my $has = "_has$priv";
+	my $has = "_has_${priv}";
 
 	$attr{$attr} = $obj->$priv
 	  if $obj->$has;
@@ -210,6 +212,12 @@ the attribute name as its first parameters.
 
 In the case where more than one instance of an object is contained,
 this is used to identify an individual instance.
+
+=item private
+
+If true, the actual attribute name is mangled; the attribute
+initialization name is left untouched (see the C<init_arg> option to
+the B<Moo> C<has> subroutine).  This defaults to true.
 
 =back
 
