@@ -64,7 +64,7 @@ sub shadow_attrs {
     for my $attr ( @{ $args->{attrs} } ) {
 
 	my $alias = $args->{fmt} ? $args->{fmt}->( $attr ) : $attr;
-	my $priv = $args->{private} ? "_shadow_${from}_${attr}" : $alias;
+	my $priv = $args->{private} ? "_shadow_${from}_${alias}" : $alias;
 	$priv =~ s/::/_/g;
 	$map{$attr} = { priv => $priv, alias => $alias };
 
