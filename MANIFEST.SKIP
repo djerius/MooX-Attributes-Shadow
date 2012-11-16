@@ -8,7 +8,7 @@ CONTRIB
 \.tar$
 ~$
 ^[^/]*\.html$
-\.old$
+\.(old|bak)$
 ^blib/
 ^MakeMaker-\d
 CVS/
