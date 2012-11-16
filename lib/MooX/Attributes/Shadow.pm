@@ -44,6 +44,7 @@ sub shadow_attrs {
 		       fmt => { allow => sub { ref $_[0]  eq 'CODE' } },
 		       attrs => { allow => sub { ref $_[0] eq 'ARRAY' && @{$_[0]}},
 				},
+		       instance => { },
 		       },
 		      { @_ } )
       or croak( "error parsing arguments: ", last_error, "\n" );
@@ -74,20 +75,31 @@ sub shadow_attrs {
 
     }
 
-    $MAP{$from}{$to} = \%map;
+    if ( $args->{instance} ) {
+
+	$MAP{$from}{$to}{instance}{$args->{instance}} = \%map;
+
+    }
+
+    else {
+
+	$MAP{$from}{$to}{default} = \%map;
+
+    }
 
     return;
 }
 
 sub xtract_attrs {
 
-    my $from = shift;
-    my $obj = shift;
+    my ( $from, $obj, $instance ) = @_;
     my $to = ref $obj;
 
-    my $map = $MAP{$from}{$to}
-      or croak( "attributes must first by copied using ",
-		__PACKAGE__, "::shadow_attrs\n" );
+
+    my $map = defined $instance ? $MAP{$from}{$to}{instance}{$instance} : $MAP{$from}{$to}{default};
+
+    croak( "attributes must first by copied using ", __PACKAGE__, "::shadow_attrs\n" )
+      unless defined $map;
 
     my %attr;
     while( my ($attr, $names) = each %$map ) {
@@ -194,14 +206,22 @@ This is a reference to a subroutine which should return a modified
 attribute name (e.g. to prevent attribute collisions).  It is passed
 the attribute name as its first parameters.
 
+=item instance
+
+In the case where more than one instance of an object is contained,
+this is used to identify an individual instance.
+
 =back
 
 =item B<xtract_attrs>
 
-  %attrs = xtract_attrs( $contained_class, $container_obj );
+  %attrs = xtract_attrs( $contained_class, $container_obj, $instance );
 
 After the container class is instantiated, B<xtract_attrs> is used to
 extract attributes for B<$contained_class> from the container object.
+
+The C<$instance> parameter is optional, and indicates the contained
+object instance whose attributes should be extracted.
 
 =back
 
