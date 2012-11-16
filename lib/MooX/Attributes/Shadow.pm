@@ -28,15 +28,13 @@ use Params::Check qw[ check last_error ];
 
 use Exporter 'import';
 
-our %EXPORT_TAGS = ( all => [ qw( copy_attrs xtract_attrs) ],
+our %EXPORT_TAGS = ( all => [ qw( shadow_attrs xtract_attrs) ],
 		   );
 Exporter::export_ok_tags('all');
 
 my %MAP;
 
-# create attributes in current class from class From.
-# From->copy_attrs( attrs => [ ], fmt => sub {} )
-sub copy_attrs {
+sub shadow_attrs {
 
     my $from = shift;
 
@@ -81,8 +79,6 @@ sub copy_attrs {
     return;
 }
 
-# extract attributes and values into a hash from an object
-# From->xtract_attrs( $obj )
 sub xtract_attrs {
 
     my $from = shift;
@@ -91,7 +87,7 @@ sub xtract_attrs {
 
     my $map = $MAP{$from}{$to}
       or croak( "attributes must first by copied using ",
-		__PACKAGE__, "::copy_attrs\n" );
+		__PACKAGE__, "::shadow_attrs\n" );
 
     my %attr;
     while( my ($attr, $names) = each %$map ) {
