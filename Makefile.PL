@@ -3,6 +3,9 @@ use inc::Module::Install;
 name 'MooX-Attributes-Shadow';
 all_from 'lib/MooX/Attributes/Shadow.pm';
 
+repository 'https://bitbucket.org/djerius/moox-attributes-shadow';
+bugtracker 'https://rt.cpan.org/Public/Dist/Display.html?Name=MooX-Attributes-Shadow';
+
 author_tests 'xt';
 author_requires 'Test::NoBreakpoints';
 author_requires 'Test::Perl::Critic';
@@ -18,6 +21,5 @@ requires 'Moo';
 requires 'Moo::Role';
 requires 'MooX::Types::MooseLike' => 0.11;
 requires 'Params::Check';
-
 
 WriteAll;
