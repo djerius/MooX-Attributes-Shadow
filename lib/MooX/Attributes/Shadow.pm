@@ -21,6 +21,9 @@
 
 package MooX::Attributes::Shadow;
 
+use strict;
+use warnings;
+
 our $VERSION = '0.01';
 
 use Carp;
@@ -33,6 +36,8 @@ our %EXPORT_TAGS = ( all => [ qw( shadow_attrs xtract_attrs) ],
 Exporter::export_ok_tags('all');
 
 my %MAP;
+
+## no critic (ProhibitAccessOfPrivateData)
 
 sub shadow_attrs {
 
@@ -68,6 +73,7 @@ sub shadow_attrs {
 	$priv =~ s/::/_/g;
 	$map{$attr} = { priv => $priv, alias => $alias };
 
+	## no critic (ProhibitNoStrict)
 	no strict 'refs';
 	$has->( $priv => ( is => 'ro',
  				    init_arg => $alias,

@@ -21,18 +21,20 @@
 
 package MooX::Attributes::Shadow::Role;
 
+use strict;
+
 use Moo::Role;
 
 use MooX::Attributes::Shadow ':all';
 
-# publish the named attributes as shadowable
-# From->shadowable( @attrs )
+## no critic (ProhibitSubroutinePrototypes)
 sub shadowable_attrs (@) {
 
     my $attrs = [ @_ ];
-    no strict 'refs';
-
     my $from = caller;
+
+    ## no critic (ProhibitNoStrict)
+    no strict 'refs';
 
     *{ caller . '::_shadowable_attrs'} = sub { @{$attrs} };
 
