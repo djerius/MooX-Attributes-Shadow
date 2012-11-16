@@ -100,7 +100,7 @@ sub xtract_attrs {
 
     my $map = defined $instance ? $MAP{$from}{$to}{instance}{$instance} : $MAP{$from}{$to}{default};
 
-    croak( "attributes must first by copied using ", __PACKAGE__, "::shadow_attrs\n" )
+    croak( "attributes must first be shadowed using ", __PACKAGE__, "::shadow_attrs\n" )
       unless defined $map;
 
     my %attr;
