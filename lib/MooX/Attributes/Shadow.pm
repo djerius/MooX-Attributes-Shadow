@@ -58,7 +58,7 @@ sub shadow_attrs {
 
     unless ( exists $args->{attrs} ) {
 
-	$args->{attrs} = [ eval { $from->_shadowable_attrs } ];
+	$args->{attrs} = [ eval { $from->shadowable_attrs } ];
 
 	croak( "must specify attrs or call shadowable_attrs in shadowed class" ) if $@;
 
