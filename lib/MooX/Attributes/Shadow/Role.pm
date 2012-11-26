@@ -37,7 +37,7 @@ sub shadowable_attrs (@) {
     no strict 'refs';
     no warnings 'redefine';
 
-    *{ caller . '::shadowable_attrs'} = sub (@) { @{$attrs} };
+    *{ caller() . '::shadowable_attrs' } = sub (@) { @{$attrs} };
 
     return;
 }
