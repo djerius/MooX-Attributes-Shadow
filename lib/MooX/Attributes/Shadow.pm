@@ -47,52 +47,55 @@ sub shadow_attrs {
     my $to = caller;
 
     my $args = check( {
-		       fmt => { allow => sub { ref $_[0]  eq 'CODE' } },
-		       attrs => { allow => sub { ref $_[0] eq 'ARRAY' && @{$_[0]}},
-				},
-		       private => { default => 1 },
-		       instance => { },
-		       },
-		      { @_ } )
-      or croak( "error parsing arguments: ", last_error, "\n" );
+            fmt => {
+                allow => sub { ref $_[0] eq 'CODE' }
+            },
+            attrs => { allow => sub { ref $_[0] eq 'ARRAY' && @{ $_[0] } }, },
+            private  => { default => 1 },
+            instance => {},
+        },
+        {@_} ) or croak( "error parsing arguments: ", last_error, "\n" );
 
 
     unless ( exists $args->{attrs} ) {
 
-	$args->{attrs} = [ eval { $from->shadowable_attrs } ];
+        $args->{attrs} = [ eval { $from->shadowable_attrs } ];
 
-	croak( "must specify attrs or call shadowable_attrs in shadowed class" ) if $@;
+        croak( "must specify attrs or call shadowable_attrs in shadowed class" )
+          if $@;
 
     }
 
     my $has = "${to}::has";
+
     my %map;
     for my $attr ( @{ $args->{attrs} } ) {
 
-	my $alias = $args->{fmt} ? $args->{fmt}->( $attr ) : $attr;
-	my $priv = $args->{private} ? "_shadow_${from}_${alias}" : $alias;
-	$priv =~ s/::/_/g;
-	$map{$attr} = { priv => $priv, alias => $alias };
+        my $alias = $args->{fmt}     ? $args->{fmt}->( $attr )    : $attr;
+        my $priv  = $args->{private} ? "_shadow_${from}_${alias}" : $alias;
+        $priv =~ s/::/_/g;
+        $map{$attr} = { priv => $priv, alias => $alias };
 
-	## no critic (ProhibitNoStrict)
-	no strict 'refs';
-	$has->( $priv => ( is => 'ro',
- 				    init_arg => $alias,
-				    predicate => "_has_${priv}",
-				  )
-	      );
+        ## no critic (ProhibitNoStrict)
+        no strict 'refs';
+        $has->(
+            $priv => (
+                is        => 'ro',
+                init_arg  => $alias,
+                predicate => "_has_${priv}",
+            ) );
 
     }
 
     if ( defined $args->{instance} ) {
 
-	$MAP{$from}{$to}{instance}{$args->{instance}} = \%map;
+        $MAP{$from}{$to}{instance}{ $args->{instance} } = \%map;
 
     }
 
     else {
 
-	$MAP{$from}{$to}{default} = \%map;
+        $MAP{$from}{$to}{default} = \%map;
 
     }
 
@@ -248,10 +251,7 @@ the B<Moo> C<has> subroutine).  This defaults to true.
 
 =item B<shadowed_attrs>
 
-  $attrs = shadowed_attrs( $contained,
-                           $container,
-                           $instance );
-
+  $attrs = shadowed_attrs( $contained, $container, $instance );
 
 Return a hash of attributes shadowed from C<$contained> into
 C<$container>.  C<$contained> and C<$container> may either be a class
