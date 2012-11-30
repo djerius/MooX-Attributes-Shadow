@@ -24,7 +24,7 @@ package MooX::Attributes::Shadow;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.01_04';
 
 use Carp;
 use Params::Check qw[ check last_error ];
