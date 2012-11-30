@@ -124,7 +124,7 @@ sub shadowed_attrs {
 
     my ( $from, $to, $instance, $map )= &_resolve_attr_env;
 
-    return { map { $_, $map->{$_}{alias} } keys %$map }
+    return { map { $map->{$_}{alias}, $_ } keys %$map }
 }
 
 sub xtract_attrs {
