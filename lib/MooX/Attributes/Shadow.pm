@@ -42,9 +42,9 @@ my %MAP;
 
 sub shadow_attrs {
 
-    my $from = shift;
+    my $contained = shift;
 
-    my $to = caller;
+    my $container = caller;
 
     my $args = check( {
             fmt => {
@@ -59,20 +59,20 @@ sub shadow_attrs {
 
     unless ( exists $args->{attrs} ) {
 
-        $args->{attrs} = [ eval { $from->shadowable_attrs } ];
+        $args->{attrs} = [ eval { $contained->shadowable_attrs } ];
 
         croak( "must specify attrs or call shadowable_attrs in shadowed class" )
           if $@;
 
     }
 
-    my $has = "${to}::has";
+    my $has = "${container}::has";
 
     my %map;
     for my $attr ( @{ $args->{attrs} } ) {
 
         my $alias = $args->{fmt}     ? $args->{fmt}->( $attr )    : $attr;
-        my $priv  = $args->{private} ? "_shadow_${from}_${alias}" : $alias;
+        my $priv  = $args->{private} ? "_shadow_${contained}_${alias}" : $alias;
         $priv =~ s/::/_/g;
         $map{$attr} = { priv => $priv, alias => $alias };
 
@@ -89,13 +89,13 @@ sub shadow_attrs {
 
     if ( defined $args->{instance} ) {
 
-        $MAP{$from}{$to}{instance}{ $args->{instance} } = \%map;
+        $MAP{$contained}{$container}{instance}{ $args->{instance} } = \%map;
 
     }
 
     else {
 
-        $MAP{$from}{$to}{default} = \%map;
+        $MAP{$contained}{$container}{default} = \%map;
 
     }
 
@@ -104,32 +104,34 @@ sub shadow_attrs {
 
 sub _resolve_attr_env {
 
-    my ( $from, $to, $instance ) = @_;
+    my ( $contained, $container, $instance ) = @_;
 
-    # from should be resolved into a class name
-    $from = blessed $from || $from;
+    # contained should be resolved into a class name
+    $contained = blessed $contained || $contained;
 
-    # allow $to to be either a class or an object
-    my $Class_to   = blessed $to   || $to;
+    # allow $container to be either a class or an object
+    my $container_Class   = blessed $container || $container;
 
-    my $map = defined $instance ? $MAP{$from}{$Class_to}{instance}{$instance} : $MAP{$from}{$Class_to}{default};
+    my $map = defined $instance
+            ? $MAP{$contained}{$container_Class}{instance}{$instance}
+	    : $MAP{$contained}{$container_Class}{default};
 
-    croak( "attributes must first be shadowed using ${from}::shadow_attrs\n" )
+    croak( "attributes must first be shadowed using ${contained}::shadow_attrs\n" )
       unless defined $map;
 
-    return ( $from, $to, $instance, $map );
+    return ( $contained, $container, $instance, $map );
 }
 
 sub shadowed_attrs {
 
-    my ( $from, $to, $instance, $map )= &_resolve_attr_env;
+    my ( $contained, $container, $instance, $map )= &_resolve_attr_env;
 
     return { map { $map->{$_}{alias}, $_ } keys %$map }
 }
 
 sub xtract_attrs {
 
-    my ( $from, $to, $instance, $map )= &_resolve_attr_env;
+    my ( $contained, $container, $instance, $map )= &_resolve_attr_env;
 
     my %attr;
     while( my ($attr, $names) = each %$map ) {
@@ -137,8 +139,8 @@ sub xtract_attrs {
 	my $priv = $names->{priv};
 	my $has = "_has_${priv}";
 
-	$attr{$attr} = $to->$priv
-	  if $to->$has;
+	$attr{$attr} = $container->$priv
+	  if $container->$has;
     }
 
     return %attr;

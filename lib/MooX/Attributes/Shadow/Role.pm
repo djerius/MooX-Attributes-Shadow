@@ -33,7 +33,6 @@ use MooX::Attributes::Shadow ':all';
 sub shadowable_attrs (@) {
 
     my $attrs = [ @_ ];
-    my $from = caller;
 
     ## no critic (ProhibitNoStrict)
     no strict 'refs';
