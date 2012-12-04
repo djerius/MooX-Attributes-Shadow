@@ -1,5 +1,8 @@
 package Container2;
 
+use strict;
+use warnings;
+
 use lib 't';
 
 use Moo;
