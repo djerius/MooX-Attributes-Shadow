@@ -104,34 +104,50 @@ sub shadow_attrs {
 
 sub _resolve_attr_env {
 
-    my ( $contained, $container, $instance ) = @_;
+    my ( $contained, $container, $options ) = @_;
 
     # contained should be resolved into a class name
-    $contained = blessed $contained || $contained;
+    my $containedClass = blessed $contained || $contained;
 
     # allow $container to be either a class or an object
-    my $container_Class   = blessed $container || $container;
+    my $containerClass = blessed $container || $container;
 
-    my $map = defined $instance
-            ? $MAP{$contained}{$container_Class}{instance}{$instance}
-	    : $MAP{$contained}{$container_Class}{default};
+    my $map = defined $options->{instance}
+            ? $MAP{$containedClass}{$containerClass}{instance}{$options->{instance}}
+	    : $MAP{$containedClass}{$containerClass}{default};
 
-    croak( "attributes must first be shadowed using ${contained}::shadow_attrs\n" )
+    croak( "attributes must first be shadowed using ${containedClass}::shadow_attrs\n" )
       unless defined $map;
 
-    return ( $contained, $container, $instance, $map );
+    return $map;
 }
+
+# call as
+# shadowed_attrs( $ContainedClass, [ $container ], \%options)
 
 sub shadowed_attrs {
 
-    my ( $contained, $container, $instance, $map )= &_resolve_attr_env;
+    my $containedClass = shift;
+    my $options = 'HASH' eq ref $_[-1] ? pop() : {};
+
+    my $containerClass = @_ ? shift : caller();
+
+    my $map = _resolve_attr_env( $containedClass, $containerClass, $options );
 
     return { map { $map->{$_}{alias}, $_ } keys %$map }
 }
 
+# call as
+# xtract_attrs( $ContainedClass, $container_obj, \%options)
 sub xtract_attrs {
 
-    my ( $contained, $container, $instance, $map )= &_resolve_attr_env;
+    my $containedClass = shift;
+    my $options = 'HASH' eq ref $_[-1] ? pop() : {};
+    my $container = shift;
+    my $containerClass = blessed $container or
+      croak( "container_obj parameter is not a container object\n" );
+
+    my $map = _resolve_attr_env( $containedClass, $containerClass, $options );
 
     my %attr;
     while( my ($attr, $names) = each %$map ) {
@@ -144,7 +160,6 @@ sub xtract_attrs {
     }
 
     return %attr;
-
 }
 
 1;
@@ -279,37 +294,55 @@ the B<Moo> C<has> subroutine).  This defaults to true.
 
 =item B<shadowed_attrs>
 
-  $attrs = shadowed_attrs( $contained, $container, $instance );
+  $attrs = shadowed_attrs( $contained, [ $container,] \%options );
 
 Return a hash of attributes shadowed from C<$contained> into
 C<$container>.  C<$contained> and C<$container> may either be a class
-name or an object. The C<$instance> parameter is optional, and
-indicates the contained object instance whose attributes should be
-extracted.
+name or an object. If C<$container> is not specified, the package name
+of the calling routine is used.
 
-The hash keys are the attribute initialization names (not the mangled
-ones) in the I<container> class; the hash values are the attribute
-names in the I<contained> class.  This makes it easy to delegate
-accessors to the contained class:
+It takes the following options:
+
+=over
+
+=item instance
+
+In the case where more than one instance of an object is contained,
+this (string) is used to identify an individual instance.
+
+=back
+
+The keys in the returned hash are the attribute initialization names
+(not the mangled ones) in the I<container> class; the hash values are
+the attribute names in the I<contained> class.  This makes it easy to
+delegate accessors to the contained class:
 
   has foo   => ( is => 'ro',
                  lazy => 1,
                  default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
-                 handles => shadowed_attrs( Foo => __PACKAGE__ ),
+                 handles => shadowed_attrs( 'Foo' ),
                );
 
 
 =item B<xtract_attrs>
 
-  %attrs = xtract_attrs( $contained, $container_obj, $instance );
+  %attrs = xtract_attrs( $contained, $container_obj, \%options );
 
 After the container class is instantiated, B<xtract_attrs> is used to
 extract attributes for the contained object from the container object.
 C<$contained> may be either a class name or an object in the contained
 class.
 
-The C<$instance> parameter is optional, and indicates the contained
-object instance whose attributes should be extracted.
+It takes the following options:
+
+=over
+
+=item instance
+
+In the case where more than one instance of an object is contained,
+this (string) is used to identify an individual instance.
+
+=back
 
 =back
 
