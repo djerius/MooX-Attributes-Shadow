@@ -191,7 +191,7 @@ MooX::Attributes::Shadow - shadow attributes of contained objects
   has foo   => ( is => 'ro',
                  lazy => 1,
                  default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
-                 handles => shadowed_attrs( Foo => __PACKAGE__ ),
+                 handles => shadowed_attrs( Foo ),
                );
 
 
