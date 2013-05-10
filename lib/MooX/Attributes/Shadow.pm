@@ -426,6 +426,9 @@ this (string) is used to identify an individual instance.
 
 =back
 
+=head1 THANKS
+
+Toby Inkster for the C<BUILDARGS> approach.
 
 
 =head1 COPYRIGHT & LICENSE
