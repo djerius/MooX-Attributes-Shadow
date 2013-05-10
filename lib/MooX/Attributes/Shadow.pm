@@ -198,55 +198,10 @@ MooX::Attributes::Shadow - shadow attributes of contained objects
 
 =head1 DESCRIPTION
 
-Classes which contain other objects at times need to
-reflect the contained objects' attributes in their own attributes.
-
-In most cases, simple method delegation will suffice:
-
-  package ContainsFoo;
-
-  has foo => ( is => 'ro',
-               isa => sub { die unless eval { shift->isa('Foo') } },
-               handles => [ 'a' ],
-             );
-
-However, method delegation does not kick in when attributes are
-specified during instantiation of the I<container> class.  For
-example, in
-
-  ContainsFoo->new( a => 1 );
-
-the delegated method for C<a> is I<not> called, and C<a> is simply dropped.
-
-One way of dealing with this is to establish proxy attributes which
-shadow C<Foo>'s attributes, and delay passing them on until after
-the container object has been instantiated:
-
-  has _a => ( is => 'ro', init_arg => 'a' );
-
-  sub BUILD {
-
-     my $self = shift;
-
-     $self->foo->a( $self->_a );
-
-  }
-
-This requires that C<Foo>'s C<a> attribute be of type C<rw>.  If the
-C<foo> attribute can be constructed on the fly,
-
-  has foo => ( is => 'ro',
-               handles => [ 'a' ],
-               lazy => 1,
-               sub default { my $self = shift,
-                             Foo->new( a => $self->_a ) }
-             )
-
-Then C<Foo>'s attribute can be of type C<ro>.
-
-This is tedious when more than one attribute is propagated.  If the
-container has its own I<a> attribute, then one must do more work to
-avoid name space collisions.
+If an object contains another object (i.e. the first object's
+attribute is a reference to the second), it's often useful to access
+the contained object's attributes as if they were in the container
+object.
 
 B<MooX::Attributes::Shadow> provides a means of registering the
 attributes to be shadowed, automatically creating proxy attributes in
@@ -256,7 +211,104 @@ constructor.
 
 A contained class can use B<MooX::Attributes::Shadow::Role> to
 simplify things even further, so that container classes using it need
-not know the names of the attributes to shadow.
+not know the names of the attributes to shadow.  This is the preferred
+approach.
+
+
+=head2 The Problem
+
+An object in class C<A> (C<$a>) has an attribute (C<< $a->b >>) which
+contains a reference to an object in class C<B> (C<$b>), which itself
+has an attribute C<< $b->attr >>, which you want to transparently
+access from C<$a>, e.g.
+
+  $a->attr => $a->b->attr;
+
+One approach might be to use method delegation:
+
+  package B;
+
+  has attr => ( is => 'rw' );
+
+  package A;
+
+  has b => (
+     is => 'ro',
+     default => sub { B->new },
+     handles => [ 'attr' ]
+   );
+
+  $a = A->new;
+
+  $a->attr( 3 ); # works!
+
+But, what if C<attr> is a required parameter to C<B>'s constructor?  The
+default generator might look something like this:
+
+  has b => (
+     is => 'ro',
+     lazy => 1,
+     default => sub { B->new( shift->attr ) },
+     handles => [ 'attr' ]
+   );
+
+  $a = A->new( attr => 3 );  # doesn't work!
+
+(Note that C<b> now must be lazily created, so that C<$a> is in a
+deterministic state when asked for the value of C<attr>).
+
+However, this doesn't work, because C<$a> doesn't have an attribute
+called C<attr>; that's just a method delegated to C<< $a->b >>. Oops.
+
+If you don't mind explicitly calling C<< B->new >> in C<A>'s constructor,
+this works:
+
+  sub BUILDARGS {
+
+    my $args = shift->SUPER::BUILDARGS(@_);
+
+    $args->{b} //= B->new( attr => delete $args->{attr} );
+
+    return $args;
+  }
+
+  $a = A->new( attr => 3 );  # works!
+
+but now C<b> can't be lazily constructed.  To achieve that requires
+actually storing C<attr> in C<$a>.  We can do that with a proxy
+attribute which masquerades as C<attr> in C<A>'s constructor:
+
+  has _attr => ( is => 'ro', init_arg => 'attr' );
+
+  has b => (
+     is => 'ro',
+     lazy => 1,
+     default => sub { B->new( shift->_attr ) },
+     handles => [ 'attr' ]
+   );
+
+  $a = A->new( attr => 3 );  #  works!
+
+Simple, but what happens if
+
+=over
+
+=item *
+
+there's more than one attribute, or
+
+=item *
+
+there's more than one instance of C<B> to construct, or
+
+=item *
+
+C<A> has it's own attribute named C<attr>?
+
+=back
+
+Endless tedium and no laziness, that's what.  Hence this module.
+
 
 =head1 INTERFACE
 
