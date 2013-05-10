@@ -50,7 +50,10 @@ sub shadow_attrs {
             fmt => {
                 allow => sub { ref $_[0] eq 'CODE' }
             },
-            attrs => { allow => sub { ref $_[0] eq 'ARRAY' && @{ $_[0] } }, },
+
+            attrs => { allow => sub { 'ARRAY' eq ref $_[0] && @{ $_[0] }
+					or 'HASH' eq ref $_[0] },
+		     },
             private  => { default => 1 },
             instance => {},
         },
@@ -67,12 +70,19 @@ sub shadow_attrs {
     }
 
     my $has = $container->can( 'has' )
-      or croak( "container class $container does not have a 'has' function.  Is it really a Moo class?" );
+      or croak( "container class $container does not have a 'has' function.",
+		" Is it really a Moo class?" );
+
+    my %attr =
+      'ARRAY' eq ref $args->{attrs} ? ( map { $_ => undef } @{$args->{attrs}} )
+	                           : %{$args->{attrs}};
 
     my %map;
-    for my $attr ( @{ $args->{attrs} } ) {
+    while( my ( $attr, $alias ) = each %attr ) {
 
-        my $alias = $args->{fmt}     ? $args->{fmt}->( $attr )    : $attr;
+	$alias = $args->{fmt} ? $args->{fmt}->( $attr ) : $attr
+	  unless defined $alias;
+
         my $priv  = $args->{private} ? "_shadow_${contained}_${alias}" : $alias;
         $priv =~ s/::/_/g;
         $map{$attr} = { priv => $priv, alias => $alias };
@@ -182,10 +192,7 @@ MooX::Attributes::Shadow - shadow attributes of contained objects
 
   # create attributes shadowing class Foo's a and b attributes, with a
   # prefix to avoid collisions.
-  shadow_attrs( Foo =>
-                attrs => [ qw( a b ) ],
-                fmt => sub { 'pfx_' . shift },
-              );
+  shadow_attrs( Foo => attrs => { a => 'pfx_a', b => 'pfx_b' } );
 
   # create an attribute which holds the contained oject, and
   # delegate the shadowed accessors to it.
@@ -195,6 +202,8 @@ MooX::Attributes::Shadow - shadow attributes of contained objects
                  handles => shadowed_attrs( Foo ),
                );
 
+  $a = Bar->new( pfx_a => 3 );
+  $a->pfx_a == $a->foo->a;
 
 =head1 DESCRIPTION
 
@@ -316,13 +325,28 @@ Endless tedium and no laziness, that's what.  Hence this module.
 
 =item B<shadow_attrs>
 
+   shadow_attrs( $contained_class, attrs => \%attrs, %options );
    shadow_attrs( $contained_class, attrs => \@attrs, %options );
 
-Create read-only attributes for the attributes in C<@attrs> and
+Create read-only attributes for the attributes in C<attrs> and
 associate them with C<$contained_class>.  There is no means of
 specifying additional attribute options.
 
-It takes the following options:
+If C<attrs> is a hash, the keys are the attribute names in the
+contained class and the values are the shadowed names in the container
+class.  Set the value to C<undef> to retain the original name.  For
+example,
+
+  { a => 'pfx_a', b => undef }
+
+The contained class's C<a> attribute is shadowed as C<pfx_a> in the
+container class, while the C<b> attribute is named the same in both
+classes.
+
+If C<attrs> is an array, the attributes in the container class are
+named the same as in the contained class.
+
+The following options are available:
 
 =over
 
@@ -330,7 +354,9 @@ It takes the following options:
 
 This is a reference to a subroutine which should return a modified
 attribute name (e.g. to prevent attribute collisions).  It is passed
-the attribute name as its first parameter.
+the attribute name as its first parameter.  If the C<attrs> parameter
+was passed as a hash, attributes with defined shadowed names are
+not passed to C<fmt>
 
 =item instance
 
