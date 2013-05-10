@@ -396,11 +396,12 @@ The keys in the returned hash are the attribute initialization names
 the attribute names in the I<contained> class.  This makes it easy to
 delegate accessors to the contained class:
 
-  has foo   => ( is => 'ro',
-                 lazy => 1,
-                 default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
-                 handles => shadowed_attrs( 'Foo' ),
-               );
+  has foo => (
+     is => 'ro',
+     lazy => 1,
+     default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
+     handles => shadowed_attrs( 'Foo' ),
+  );
 
 
 =item B<xtract_attrs>
