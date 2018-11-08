@@ -1,6 +1,6 @@
 CONTRIB
 \bRCS\b
-^MANIFEST\.
+^Build$
 ^Makefile$
 ^GNUmakefile
 ^INSTALL
@@ -8,7 +8,7 @@ CONTRIB
 \.tar$
 ~$
 ^[^/]*\.html$
-\.(old|bak)$
+\.old$
 ^blib/
 ^MakeMaker-\d
 CVS/
@@ -16,3 +16,4 @@ CVS/
 ^.hg
 ^MYMETA
 ^cover_db/
+^_build_params

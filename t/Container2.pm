@@ -15,10 +15,10 @@ has foo => (
     is      => 'ro',
     lazy    => 1,
     default => sub {
-	my $self = shift;
-	[ map { Contained->new( xtract_attrs( 'Contained', $self, { instance => $_ } ) ) }
-	  0, 1
-	] }
+        my $self = shift;
+        [ map { Contained->new( xtract_attrs( 'Contained', $self, { instance => $_ } ) ) }
+          0, 1
+        ] }
     );
 
 

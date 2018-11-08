@@ -24,14 +24,14 @@ use MooX::Attributes::Shadow ':all';
     has foo => (
         is      => 'ro',
         default => sub { [ ContainedWRole->new( ContainedWRole->xtract_attrs( $_[0] ) ),
-			   ContainedWRole->new( ContainedWRole->xtract_attrs( $_[0], instance => 1 ) )
-			 ] },
+                           ContainedWRole->new( ContainedWRole->xtract_attrs( $_[0], instance => 1 ) )
+                         ] },
     );
 
     has attrs => (
         is => 'ro',
         default => sub { [ ContainedWRole->shadowed_attrs,
-			   ContainedWRole->shadowed_attrs( { instance => 1 } ) ] },
+                           ContainedWRole->shadowed_attrs( { instance => 1 } ) ] },
    );
 
 }
@@ -45,12 +45,12 @@ is_deeply( { xtract_attrs( $bar->foo->[1] => $bar, { instance => 1 } ) }, { a =>
 
 
 for my $setup ( { attrs => { 'xa' => 'a', 'xb' => 'b' },
-		  idx => 0 },
-		{ attrs => { 'x1a' => 'a', 'x1b' => 'b' },
-		  idx => 1,
-		  instance => 1
-		},
-	      ) {
+                  idx => 0 },
+                { attrs => { 'x1a' => 'a', 'x1b' => 'b' },
+                  idx => 1,
+                  instance => 1
+                },
+              ) {
 
     my $args = exists $setup->{instance} ? { instance => $setup->{instance} } : {} ;
 

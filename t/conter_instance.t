@@ -12,16 +12,16 @@ use Container2;
 
 
 Container2::run_shadow_attrs( attrs => [ 'a' ],
-			      private => 0,
-			      instance => 0,
-			      fmt => sub { shift() . '0' },
-			    );
+                              private => 0,
+                              instance => 0,
+                              fmt => sub { shift() . '0' },
+                            );
 
 Container2::run_shadow_attrs( attrs => [ 'a' ],
-			      private => 0,
-			      instance => 1,
-			      fmt => sub { shift() . '1' },
-			    );
+                              private => 0,
+                              instance => 1,
+                              fmt => sub { shift() . '1' },
+                            );
 
 
 my $obj = Container2->new( a0 => 3, a1 => 4 );

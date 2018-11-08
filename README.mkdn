@@ -1,0 +1,254 @@
+# NAME
+
+MooX::Attributes::Shadow - shadow attributes of contained objects
+
+# VERSION
+
+version 0.03
+
+# SYNOPSIS
+
+    # shadow Foo's attributes in Bar
+    package Bar;
+
+    use Moo;
+    use Foo;
+
+    use MooX::Attributes::Shadow ':all';
+
+    # create attributes shadowing class Foo's a and b attributes, with a
+    # prefix to avoid collisions.
+    shadow_attrs( Foo => attrs => { a => 'pfx_a', b => 'pfx_b' } );
+
+    # create an attribute which holds the contained oject, and
+    # delegate the shadowed accessors to it.
+    has foo   => ( is => 'ro',
+                   lazy => 1,
+                   default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
+                   handles => shadowed_attrs( Foo ),
+                 );
+
+    $a = Bar->new( pfx_a => 3 );
+    $a->pfx_a == $a->foo->a;
+
+# DESCRIPTION
+
+If an object contains another object (i.e. the first object's
+attribute is a reference to the second), it's often useful to access
+the contained object's attributes as if they were in the container
+object.
+
+**MooX::Attributes::Shadow** provides a means of registering the
+attributes to be shadowed, automatically creating proxy attributes in
+the container class, and easily extracting the shadowed attributes and
+values from the container class for use in the contained class's
+constructor.
+
+A contained class can use **MooX::Attributes::Shadow::Role** to
+simplify things even further, so that container classes using it need
+not know the names of the attributes to shadow.  This is the preferred
+approach.
+
+## The Problem
+
+An object in class `A` (`$a`) has an attribute (`$a->b`) which
+contains a reference to an object in class `B` (`$b`), which itself
+has an attribute `$b->attr`, which you want to transparently
+access from `$a`, e.g.
+
+    $a->attr => $a->b->attr;
+
+One approach might be to use method delegation:
+
+    package B;
+
+    has attr => ( is => 'rw' );
+
+    package A;
+
+    has b => (
+       is => 'ro',
+       default => sub { B->new },
+       handles => [ 'attr' ]
+     );
+
+    $a = A->new;
+
+    $a->attr( 3 ); # works!
+
+But, what if `attr` is a required parameter to `B`'s constructor?  The
+default generator might look something like this:
+
+    has b => (
+       is => 'ro',
+       lazy => 1,
+       default => sub { B->new( shift->attr ) },
+       handles => [ 'attr' ]
+     );
+
+    $a = A->new( attr => 3 );  # doesn't work!
+
+(Note that `b` now must be lazily created, so that `$a` is in a
+deterministic state when asked for the value of `attr`).
+
+However, this doesn't work, because `$a` doesn't have an attribute
+called `attr`; that's just a method delegated to `$a->b`. Oops.
+
+If you don't mind explicitly calling `B->new` in `A`'s constructor,
+this works:
+
+    sub BUILDARGS {
+
+      my $args = shift->SUPER::BUILDARGS(@_);
+
+      $args->{b} //= B->new( attr => delete $args->{attr} );
+
+      return $args;
+    }
+
+    $a = A->new( attr => 3 );  # works!
+
+but now `b` can't be lazily constructed.  To achieve that requires
+actually storing `attr` in `$a`.  We can do that with a proxy
+attribute which masquerades as `attr` in `A`'s constructor:
+
+    has _attr => ( is => 'ro', init_arg => 'attr' );
+
+    has b => (
+       is => 'ro',
+       lazy => 1,
+       default => sub { B->new( shift->_attr ) },
+       handles => [ 'attr' ]
+     );
+
+    $a = A->new( attr => 3 );  #  works!
+
+Simple, but what happens if
+
+- there's more than one attribute, or
+- there's more than one instance of `B` to construct, or
+- `A` has it's own attribute named `attr`?
+
+Endless tedium and no laziness, that's what.  Hence this module.
+
+# INTERFACE
+
+- **shadow\_attrs**
+
+        shadow_attrs( $contained_class, attrs => \%attrs, %options );
+        shadow_attrs( $contained_class, attrs => \@attrs, %options );
+
+    Create read-only attributes for the attributes in `attrs` and
+    associate them with `$contained_class`.  There is no means of
+    specifying additional attribute options.
+
+    If `attrs` is a hash, the keys are the attribute names in the
+    contained class and the values are the shadowed names in the container
+    class.  Set the value to `undef` to retain the original name.  For
+    example,
+
+        { a => 'pfx_a', b => undef }
+
+    The contained class's `a` attribute is shadowed as `pfx_a` in the
+    container class, while the `b` attribute is named the same in both
+    classes.
+
+    If `attrs` is an array, the attributes in the container class are
+    named the same as in the contained class.
+
+    The following options are available:
+
+    - fmt
+
+        This is a reference to a subroutine which should return a modified
+        attribute name (e.g. to prevent attribute collisions).  It is passed
+        the attribute name as its first parameter.  If the `attrs` parameter
+        was passed as a hash, attributes with defined shadowed names are
+        not passed to `fmt`
+
+    - instance
+
+        In the case where more than one instance of an object is contained,
+        this (string) is used to identify an individual instance.
+
+    - private
+
+        If true, the actual attribute name is mangled; the attribute
+        initialization name is left untouched (see the `init_arg` option to
+        the **Moo** `has` subroutine).  This defaults to true.
+
+- **shadowed\_attrs**
+
+        $attrs = shadowed_attrs( $contained, [ $container,] \%options );
+
+    Return a hash of attributes shadowed from `$contained` into
+    `$container`.  `$contained` and `$container` may either be a class
+    name or an object. If `$container` is not specified, the package name
+    of the calling routine is used.
+
+    It takes the following options:
+
+    - instance
+
+        In the case where more than one instance of an object is contained,
+        this (string) is used to identify an individual instance.
+
+    The keys in the returned hash are the attribute initialization names
+    (not the mangled ones) in the _container_ class; the hash values are
+    the attribute names in the _contained_ class.  This makes it easy to
+    delegate accessors to the contained class:
+
+        has foo => (
+           is => 'ro',
+           lazy => 1,
+           default => sub { Foo->new( xtract_attrs( Foo => shift ) ) },
+           handles => shadowed_attrs( 'Foo' ),
+        );
+
+- **xtract\_attrs**
+
+        %attrs = xtract_attrs( $contained, $container_obj, \%options );
+
+    After the container class is instantiated, **xtract\_attrs** is used to
+    extract attributes for the contained object from the container object.
+    `$contained` may be either a class name or an object in the contained
+    class.
+
+    It takes the following options:
+
+    - instance
+
+        In the case where more than one instance of an object is contained,
+        this (string) is used to identify an individual instance.
+
+# THANKS
+
+Toby Inkster for the `BUILDARGS` approach.
+
+# BUGS
+
+Please report any bugs or feature requests on the bugtracker website
+[https://rt.cpan.org/Public/Dist/Display.html?Name=MooX-Attributes-Shadow](https://rt.cpan.org/Public/Dist/Display.html?Name=MooX-Attributes-Shadow)
+or by email to
+[bug-MooX-Attributes-Shadow@rt.cpan.org](mailto:bug-MooX-Attributes-Shadow@rt.cpan.org).
+
+When submitting a bug or request, please include a test-file or a
+patch to an existing test-file that illustrates the bug or desired
+feature.
+
+# SOURCE
+
+The development version is on github at [https://github.com/djerius/moox-attributes-shadow](https://github.com/djerius/moox-attributes-shadow)
+and may be cloned from [git://github.com/djerius/moox-attributes-shadow.git](git://github.com/djerius/moox-attributes-shadow.git)
+
+# AUTHOR
+
+Diab Jerius <djerius@cpan.org>
+
+# COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2018 by Smithsonian Astrophysical Observatory.
+
+This is free software, licensed under:
+
+    The GNU General Public License, Version 3, June 2007

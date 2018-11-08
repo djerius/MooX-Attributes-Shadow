@@ -1,25 +1,6 @@
-# --8<--8<--8<--8<--
-#
-# Copyright (C) 2012 Smithsonian Astrophysical Observatory
-#
-# This file is part of MooX-Attributes-Shadow
-#
-# MooX-Attributes-Shadow is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at
-# your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# -->8-->8-->8-->8--
-
 package MooX::Attributes::Shadow::Role;
+
+# ABSTRACT: enumerate shadowable attributes in a contained class
 
 use strict;
 
@@ -27,7 +8,14 @@ our $VERSION = '0.02';
 
 use Moo::Role;
 
-use MooX::Attributes::Shadow ':all';
+use namespace::clean;
+
+use MooX::Attributes::Shadow;
+
+# make sure we have symbols in this package, so namespace clean test passes.
+sub shadow_attrs { goto \&MooX::Attributes::Shadow::shadow_attrs };
+sub shadowed_attrs { goto \&MooX::Attributes::Shadow::shadowed_attrs };
+sub xtract_attrs { goto \&MooX::Attributes::Shadow::xtract_attrs };
 
 ## no critic (ProhibitSubroutinePrototypes)
 sub shadowable_attrs (@) {
@@ -60,27 +48,27 @@ sub new_from_attrs (@) {
 
     if ( @_ == 1 ) {
 
-	$options = shift;
+        $options = shift;
 
     }
 
     elsif ( @_ == 2 && 'HASH' eq ref $_[0] && 'HASH' eq ref $_[1] ) {
 
-	$options = shift;
-	%attrs = %{ shift() };
+        $options = shift;
+        %attrs = %{ shift() };
 
     }
 
     elsif ( @_ % 2 ) {
 
-	$options = shift;
-	%attrs = @_;
+        $options = shift;
+        %attrs = @_;
 
     }
 
     else {
 
-	%attrs = @_;
+        %attrs = @_;
 
     }
 
@@ -89,12 +77,11 @@ sub new_from_attrs (@) {
 
 1;
 
+# COPYRIGHT
 
 __END__
 
-=head1 NAME
-
-MooX::Attributes::Shadow::Role - enumerate shadowable attributes in a contained class
+=for stopwords ContainedClass shadowable
 
 =head1 SYNOPSIS
 
@@ -271,16 +258,3 @@ this (string) is used to identify an individual instance.
 
 =back
 
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2012 Smithsonian Astrophysical Observatory
-
-This software is released under the GNU General Public License.  You
-may find a copy at
-
-   http://www.fsf.org/copyleft/gpl.html
-
-
-=head1 AUTHOR
-
-Diab Jerius E<lt>djerius@cfa.harvard.eduE<gt>
