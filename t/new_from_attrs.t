@@ -1,12 +1,8 @@
 #!perl
 
-use strict;
-use warnings;
+use Test2::V0;
+use Test::Lib;
 
-use Test::More;
-use Test::Deep;
-
-use lib 't';
 use MooX::Attributes::Shadow ':all';
 
 {
@@ -52,9 +48,8 @@ for my $idx ( 0..$#testdata ) {
 
     my $foo = $bar->foo->[$idx];
 
-    is_deeply ( { a => $foo->a, b => $foo->b }, $testdata[$idx], "idx $idx" );
+    is ( { a => $foo->a, b => $foo->b }, $testdata[$idx], "idx $idx" );
 
 }
-
 
 done_testing;
