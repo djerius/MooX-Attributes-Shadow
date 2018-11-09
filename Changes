@@ -2,6 +2,11 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+0.05      2018-11-08 14:25:54-05:00 America/New_York
+
+  * no changes. upgrade to stable.
+
+
 0.04      2018-11-08 14:25:54-05:00 America/New_York (TRIAL RELEASE)
 
 
